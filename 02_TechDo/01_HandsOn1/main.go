@@ -75,6 +75,62 @@ func FizzBuzz(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	}
 }
 
+// プロフィール用 struct
+type profile struct {
+	Name string `json:"name"`
+	Age	 int `json:"age"`
+	Gender string `json:"gender"`
+	Favorite_foods []string `json:"favorite_foods"`
+}
+var profiles map[string]profile
+
+func InitProfiles() {
+
+	profiles = make(map[string]profile)
+	// Bob, Alice のプロフィールをセット
+	bob := profile {
+		Name:           "Bob",
+		Age:            25,
+		Gender:         "Man",
+		Favorite_foods: []string{"Hamburger","Cookie","Chocolate"},
+	}
+	alice := profile {
+		Name:           "Alice",
+		Age:            24,
+		Gender:         "Woman",
+		Favorite_foods: []string{"Apple","Orange","Melon"},
+	}
+	profiles["Bob"] = bob
+	profiles["Alice"] = alice
+}
+
+// /Profile/:name にハンドルされている Profile 関数
+// :name が Bob または Alice ならプロフィールを JSON 形式で返す
+func Profile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+
+	// GET メソッドの時、プロフィールの表示
+	if r.Method == http.MethodGet {
+		name := p.ByName("name")
+
+		if name != "Bob" && name != "Alice" {
+			http.Error(w, "invalid name", http.StatusBadRequest)
+		}
+		if name == "Bob" {
+			bytes, _ := json.Marshal(&profiles[0])
+			fmt.Fprintf(w, fmt.Sprintf("%s\n",string(bytes)))
+		}
+		if name == "Alice" {
+			bytes, _ := json.Marshal(&profiles[1])
+			fmt.Fprintf(w, fmt.Sprintf("%s\n",string(bytes)))
+		}
+	}
+
+	// POST メソッドの時、プロフィールの登録
+	if r.Method == http.MethodPost {
+
+	}
+}
+
 func main() {
 	router := httprouter.New() //HTTPルーターを初期化
 
@@ -86,6 +142,11 @@ func main() {
 	router.POST("/Example", Example)
 
 	router.GET("/FizzBuzz/:num", FizzBuzz)
+
+	InitProfiles()
+	router.GET("/Profile/:name", Profile)
+	router.POST("/Profile", Profile)
+
 	// Web サーバを 8080 ポートで立ち上げる
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {
