@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"html/template"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -104,6 +105,14 @@ func InitProfiles() {
 	profiles["Alice"] = alice
 }
 
+func Index(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	t := template.Must(template.ParseFiles("index.html.tpl"))
+	err := t.ExecuteTemplate(w, "index.html.tpl", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // /Profile/:name にハンドルされている Profile 関数
 // :name が Bob または Alice ならプロフィールを JSON 形式で返す
 func Profile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -112,24 +121,47 @@ func Profile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	if r.Method == http.MethodGet {
 		name := p.ByName("name")
 
-		if name != "Bob" && name != "Alice" {
+		_profile, ok := profiles[name]; 
+		if ok == false  {
 			http.Error(w, "invalid name", http.StatusBadRequest)
+			return
 		}
-		if name == "Bob" {
-			bytes, _ := json.Marshal(&profiles[0])
-			fmt.Fprintf(w, fmt.Sprintf("%s\n",string(bytes)))
-		}
-		if name == "Alice" {
-			bytes, _ := json.Marshal(&profiles[1])
-			fmt.Fprintf(w, fmt.Sprintf("%s\n",string(bytes)))
+		//bytes, _ := json.Marshal(&_profile)
+		//fmt.Fprintf(w, fmt.Sprintf("%s\n",string(bytes)))
+		t := template.Must(template.ParseFiles("profile.html.tpl"))
+		err := t.ExecuteTemplate(w, "profile.html.tpl", _profile)
+		if err != nil {
+			log.Fatal(err)
 		}
 	}
 
 	// POST メソッドの時、プロフィールの登録
 	if r.Method == http.MethodPost {
+		defer r.Body.Close()
 
+		bodyBytes, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var _profile profile
+		err = json.Unmarshal(bodyBytes, &_profile)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		_, ok := profiles[_profile.Name]; 
+		if ok == true  {
+			http.Error(w, "this name already exists.", http.StatusBadRequest)
+			return
+		}
+		profiles[_profile.Name] = _profile
+		fmt.Fprintf(w, fmt.Sprintf("%+v\n", profiles[_profile.Name]))
+		return
 	}
 }
+
 
 func main() {
 	router := httprouter.New() //HTTPルーターを初期化
@@ -144,6 +176,7 @@ func main() {
 	router.GET("/FizzBuzz/:num", FizzBuzz)
 
 	InitProfiles()
+	router.GET("/", Index)
 	router.GET("/Profile/:name", Profile)
 	router.POST("/Profile", Profile)
 
@@ -160,3 +193,4 @@ func main() {
 // Web サーバにアクセス
 // ・ブラウザで http://localhost:8080/Hello/golang にアクセス
 // ・$ curl -XPOST -d "{\"id\": 1, \"name\": \"yukpiz\"}" http://localhost:8080/Example
+// ・$ curl -XPOST -d "{\"Name\":\"Muroya\", \"Age\":25, \"Gender\":\"Man\", \"Favorite_foods\":[\"Ramen\", \"Curry Rice\"]"} http://localhost:8080/Profile
