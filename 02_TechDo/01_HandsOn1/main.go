@@ -8,18 +8,19 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"html/template"
+
 	"github.com/julienschmidt/httprouter"
 )
 
 // /Hello/:lang にハンドルされている Hello 関数
 func Hello(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	lang := p.ByName("lang")  //lang パラメータを取得する
-	fmt.Fprintf(w, lang)      //レスポンスに値を書き込む
+	lang := p.ByName("lang") //lang パラメータを取得する
+	fmt.Fprintf(w, lang)     //レスポンスに値を書き込む
 }
 
 // /Example にハンドルされている Example 関数
@@ -36,8 +37,8 @@ func Example(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	// JSONパラメータを構造体にするための定義
 	type ExampleParameter struct {
-		ID		int		`json:"id"`
-		Name	string	`json:"name"`
+		ID   int    `json:"id"`
+		Name string `json:"name"`
 	}
 	var param ExampleParameter
 
@@ -61,14 +62,14 @@ func FizzBuzz(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		http.Error(w, "400", http.StatusBadRequest)
 	}
 
-	for i:=1; i<=num; i++ {
-		if i%3==0 {
-			if i%5==0 {
+	for i := 1; i <= num; i++ {
+		if i%3 == 0 {
+			if i%5 == 0 {
 				fmt.Fprintf(w, fmt.Sprintf("%d FizzBuzz!\n", i))
 			} else {
 				fmt.Fprintf(w, fmt.Sprintf("%d Fizz\n", i))
 			}
-		} else if i%5==0 {
+		} else if i%5 == 0 {
 			fmt.Fprintf(w, fmt.Sprintf("%d Buzz\n", i))
 		} else {
 			fmt.Fprintf(w, fmt.Sprintf("%d\n", i))
@@ -78,28 +79,29 @@ func FizzBuzz(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 // プロフィール用 struct
 type profile struct {
-	Name string `json:"name"`
-	Age	 int `json:"age"`
-	Gender string `json:"gender"`
+	Name           string   `json:"name"`
+	Age            int      `json:"age"`
+	Gender         string   `json:"gender"`
 	Favorite_foods []string `json:"favorite_foods"`
 }
+
 var profiles map[string]profile
 
 func InitProfiles() {
 
 	profiles = make(map[string]profile)
 	// Bob, Alice のプロフィールをセット
-	bob := profile {
+	bob := profile{
 		Name:           "Bob",
 		Age:            25,
 		Gender:         "Man",
-		Favorite_foods: []string{"Hamburger","Cookie","Chocolate"},
+		Favorite_foods: []string{"Hamburger", "Cookie", "Chocolate"},
 	}
-	alice := profile {
+	alice := profile{
 		Name:           "Alice",
 		Age:            24,
 		Gender:         "Woman",
-		Favorite_foods: []string{"Apple","Orange","Melon"},
+		Favorite_foods: []string{"Apple", "Orange", "Melon"},
 	}
 	profiles["Bob"] = bob
 	profiles["Alice"] = alice
@@ -107,7 +109,7 @@ func InitProfiles() {
 
 func Index(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	t := template.Must(template.ParseFiles("index.html.tpl"))
-	err := t.ExecuteTemplate(w, "index.html.tpl", nil)
+	err := t.ExecuteTemplate(w, "index.html.tpl", profiles)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -121,8 +123,8 @@ func Profile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	if r.Method == http.MethodGet {
 		name := p.ByName("name")
 
-		_profile, ok := profiles[name]; 
-		if ok == false  {
+		_profile, ok := profiles[name]
+		if ok == false {
 			http.Error(w, "invalid name", http.StatusBadRequest)
 			return
 		}
@@ -151,8 +153,8 @@ func Profile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		_, ok := profiles[_profile.Name]; 
-		if ok == true  {
+		_, ok := profiles[_profile.Name]
+		if ok == true {
 			http.Error(w, "this name already exists.", http.StatusBadRequest)
 			return
 		}
@@ -161,7 +163,6 @@ func Profile(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		return
 	}
 }
-
 
 func main() {
 	router := httprouter.New() //HTTPルーターを初期化
