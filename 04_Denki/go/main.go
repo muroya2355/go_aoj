@@ -26,7 +26,7 @@ func main() {
 
 	// ハンドラ関数の登録
 	mux.HandleFunc("/login", login)               // ログインページの表示
-	mux.HandleFunc("/authenticate", authenticate) // ログイン認証
+	mux.HandleFunc("/authenticate", Authenticate) // ログイン認証
 
 	// サーバの生成、マルギプレクサの登録
 	server := &http.Server{

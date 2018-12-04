@@ -2,6 +2,5 @@ package model
 
 // User : ログインユーザ
 type User struct {
-	Loginid  string
-	Password string
+	Loginid, Password string
 }
